@@ -57,11 +57,11 @@
 
 ## ساختار فنی فعلی
 
-- پروژه فعلی یک Next.js 15 با React 19 است و کدهای فرانت‌اند فعلاً در ریشه قرار دارند؛ انتقال احتمالی آن‌ها به `frontend/` فقط در بخش سوم برنامه انجام می‌شود.
-- `app/page.jsx` صفحه عمومی Vigo، `app/Chatbot.jsx` رابط چت‌بات، و `app/api/chat/route.js` اتصال فعلی مستقیم چت‌بات به OpenRouter هستند.
-- `app/globals.css`، `app/hero.module.css` و `app/chatbot.module.css` استایل‌ها را نگه می‌دارند؛ دارایی‌های تصویری در `public/images/` قرار دارند.
-- دانش تأییدشده چت‌بات در `lib/vigo-knowledge.js` است. تا بخش هشتم، اتصال OpenRouter در Next.js باقی می‌ماند و سپس به FastAPI منتقل می‌شود.
-- `backend/main.py` سرویس حداقلی FastAPI را ارائه می‌کند: HTML آزمایشی در `/` و سلامت API در `/api/health`.
-- `Dockerfile` یک تصویر تک‌کانتینری Python/FastAPI می‌سازد و وابستگی‌های Python را درون کانتینر با `uv` نصب می‌کند. `.dockerignore` از ورود `.env` به image جلوگیری می‌کند.
+- پروژه Next.js 15 با React 19 اکنون در `frontend/` قرار دارد و با خروجی استاتیک در `frontend/out/` ساخته می‌شود.
+- `frontend/app/page.jsx` صفحه عمومی Vigo و `frontend/app/Chatbot.jsx` رابط چت‌بات هستند. Route قبلی OpenRouter در `frontend/legacy/api/` نگه‌داری می‌شود تا در بخش هشتم به FastAPI منتقل شود.
+- `frontend/app/globals.css`، `frontend/app/hero.module.css` و `frontend/app/chatbot.module.css` استایل‌ها را نگه می‌دارند؛ دارایی‌های تصویری در `frontend/public/images/` قرار دارند.
+- دانش تأییدشده چت‌بات در `frontend/lib/vigo-knowledge.js` است.
+- `backend/main.py` مسیر `/api/health` را پیش از mount خروجی `frontend/out/` در `/` ارائه می‌کند.
+- `Dockerfile` ابتدا خروجی استاتیک Next.js و آزمون‌های آن را با Node می‌سازد و سپس آن را در image نهایی Python/FastAPI با `uv` کپی می‌کند. `.dockerignore` از ورود `.env`، cacheها و وابستگی‌ها به image جلوگیری می‌کند.
 - اسکریپت‌های `scripts/start.ps1` و `scripts/stop.ps1` برای Windows و `scripts/start.sh` و `scripts/stop.sh` برای macOS/Linux هستند. volume نام‌دار `vigo-data` برای داده پایدار آینده در `/data` mount می‌شود.
-- SQLite، مسیرهای داده‌ای، احراز هویت، و آزمون‌های خودکار هنوز به مراحل بعدی موکول شده‌اند.
+- SQLite، مسیرهای داده‌ای و احراز هویت به مراحل بعدی موکول شده‌اند.

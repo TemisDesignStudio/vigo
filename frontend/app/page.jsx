@@ -31,13 +31,40 @@ const faqs = [
   ['کردیت‌ها تا چه زمانی اعتبار دارند؟', 'بسته از زمان فعال‌سازی یک ماه اعتبار دارد. با تمدید به‌موقع، مانده به دوره جدید منتقل می‌شود.'],
   ['از کجا وضعیت پروژه را ببینم؟', 'وضعیت و فایل‌ها در داشبورد وب هستند. اعلان‌های مهم در بات تلگرام هم نمایش داده می‌شوند.']
 ];
+const campaignOptions = {
+  '۵ میلیون تومان': {
+    credits: '۵۰ کردیت',
+    collaborators: '۳ همکار',
+    reels: '۳ ریلز تولیدی',
+    views: 'حدود ۲۲ هزار بازدید',
+    summary: 'ترکیب پیشنهادی نمونه: ۳ همکار، ۵۰ کردیت و ۳ خروجی آماده برند',
+    details: ['۱ تولید و انتشار در پیج کریتور: ۱۲ هزار بازدید', '۲ تولید برای انتشار توسط برند: ۶ هزار بازدید', '۱ انتشار در پیج تبلیغاتی: ۴ هزار بازدید']
+  },
+  '۱۰ میلیون تومان': {
+    credits: '۱۰۰ کردیت',
+    collaborators: '۶ همکار',
+    reels: '۷ ریلز تولیدی',
+    views: 'حدود ۵۱ هزار بازدید',
+    summary: 'ترکیب پیشنهادی نمونه: ۶ همکار، ۱۰۰ کردیت و ۷ خروجی آماده برند',
+    details: ['۲ تولید و انتشار در پیج کریتور: ۳۰ هزار بازدید', '۴ تولید برای انتشار توسط برند: ۱۲ هزار بازدید', '۲ انتشار در پیج تبلیغاتی: ۹ هزار بازدید']
+  },
+  '۲۵ میلیون تومان': {
+    credits: '۲۵۸ کردیت',
+    collaborators: '۱۴ همکار',
+    reels: '۱۸ ریلز تولیدی',
+    views: 'حدود ۱۴۸ هزار بازدید',
+    summary: 'ترکیب پیشنهادی نمونه: ۱۴ همکار، ۲۵۸ کردیت و ۱۸ خروجی آماده برند',
+    details: ['۶ تولید و انتشار در پیج کریتور: ۸۴ هزار بازدید', '۹ تولید برای انتشار توسط برند: ۲۷ هزار بازدید', '۵ انتشار در پیج تبلیغاتی: ۳۷ هزار بازدید']
+  }
+};
 
 function ScrollButton({ children = 'شروع کمپین' }) { return <button className="button" onClick={() => document.getElementById('budget').scrollIntoView({ behavior: 'smooth' })}>{children}</button> }
 
 export default function Page() {
-  const [budget, setBudget] = useState('۱۰ میلیون تومان');
+  const [budget, setBudget] = useState('۵ میلیون تومان');
   const [open, setOpen] = useState(null);
   const prices = [['شروع', '۵,۰۰۰,۰۰۰', '۵۰'], ['رشد', '۱۵,۰۰۰,۰۰۰', '۱۵۵'], ['گسترش', '۳۰,۰۰۰,۰۰۰', '۳۲۱']];
+  const campaign = campaignOptions[budget];
   return <main>
     <header className="nav shell">
       <a className="logo" href="#top">VIGO</a><nav><a href="#creators">کریتورها و اینفلوئنسرها</a><a href="#how">چطور کار می‌کند؟</a><a href="#prices">تعرفه‌ها</a></nav><div className="nav-actions"><a href="#footer">ورود</a><ScrollButton>ساخت کمپین</ScrollButton></div>
@@ -52,9 +79,9 @@ export default function Page() {
       </div>
     </section>
     <section id="budget" className="calculator shell card">
-      <div className="calc-intro"><small>برآورد نمونه کمپین</small><h2>با این بودجه چه می‌گیری؟</h2><p>یک بودجه انتخاب کن تا ظرفیت تولید و برآورد بازدید را ببینی.</p><b>بودجه نمونه</b><div className="budget-tabs">{['۵ میلیون تومان','۱۰ میلیون تومان','۲۵ میلیون تومان'].map(x => <button className={budget===x?'active':''} onClick={()=>setBudget(x)} key={x}>{x}<span>{x==='۵ میلیون تومان'?'۵۰ کردیت':x==='۱۰ میلیون تومان'?'۱۰۰ کردیت':'۲۵۸/۳۳۳ کردیت'}</span></button>)}</div></div>
-      <div className="stat-grid"><div><small>تعداد همکار پیشنهادی</small><strong>۶ همکار</strong></div><div><small>ظرفیت تولید در این مثال</small><strong>۵ ریلز تولیدی</strong></div><div className="highlight"><small>بازدید تخمینی همین نمونه</small><strong>حدود ۶۹ هزار بازدید</strong></div></div>
-      <div className="calc-note"><b>ترکیب پیشنهادی نمونه: ۶ همکار، ۶۰ کردیت، ۱۰ انتشار و فایل آماده برند</b><br/>۲ تولید و انتشار در پیج کریتور: ۴۰,۷۰۹ بازدید<br/>۲ تولید برای انتشار توسط برند: ۶,۰۰۰ بازدید<br/>۱ انتشار در پیج تبلیغاتی: ۲۲,۷۷۱ بازدید</div><p className="disclaimer">جمع میانگین بازدید پیج کریتورها و پیج تبلیغاتی، به‌علاوه حدود ۲ هزار بازدید برای هر ریلز قابل انتشار توسط برند. بازدید تضمینی نیست.</p><ScrollButton/>
+      <div className="calc-intro"><small>برآورد نمونه کمپین</small><h2>با این بودجه چه می‌گیری؟</h2><p>یک بودجه انتخاب کن تا ظرفیت تولید و برآورد بازدید را ببینی.</p><b>بودجه نمونه</b><div className="budget-tabs">{Object.entries(campaignOptions).map(([amount, option]) => <button className={budget===amount?'active':''} onClick={()=>setBudget(amount)} key={amount}>{amount}<span>{option.credits}</span></button>)}</div></div>
+      <div className="stat-grid"><div><small>تعداد همکار پیشنهادی</small><strong>{campaign.collaborators}</strong></div><div><small>ظرفیت تولید در این مثال</small><strong>{campaign.reels}</strong></div><div className="highlight"><small>بازدید تخمینی همین نمونه</small><strong>{campaign.views}</strong></div></div>
+      <div className="calc-note"><b>{campaign.summary}</b>{campaign.details.map((detail) => <span key={detail}><br/>{detail}</span>)}</div><p className="disclaimer">جمع میانگین بازدید پیج کریتورها و پیج تبلیغاتی، به‌علاوه حدود ۲ هزار بازدید برای هر ریلز قابل انتشار توسط برند. بازدید تضمینی نیست.</p><ScrollButton/>
     </section>
     <section className="section shell"><SectionHeading tag="۰۲ / نوع همکاری" title="با یک بسته، چند نوع همکاری داشته باش." text="یک مبلغ مشخص برای بسته می‌پردازی و اعتبارش را بسته به نیازت بین تولید ریلز، همکاری با اینفلوئنسر و انتشار در پیج‌های تبلیغاتی تقسیم می‌کنی."/><div className="three-grid">{collaboration.map(([num,title,text,style])=><article className={'choice '+style} key={num}><i>{num}</i><h3>{title}</h3><p>{text}</p></article>)}</div></section>
     <section className="gray"><div className="section shell"><SectionHeading tag="۰۳ / مزیت‌ها" title="چرا ویگو برای تولید محتوای برندت؟" text="به اندازه کمپینت هزینه کن، برای هر محتوا چهره مناسب را انتخاب کن و کار را یکجا پیش ببر."/><div className="benefits">{benefits.map(([x,y])=><article key={x}><span>✦</span><h3>{x}</h3><p>{y}</p></article>)}</div></div></section>
