@@ -13,10 +13,10 @@ from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from database import connect, now, password_matches
-from knowledge import VIGO_ASSISTANT_INSTRUCTIONS
+from knowledge import VIGO_ADMIN_ASSISTANT_INSTRUCTIONS, VIGO_ASSISTANT_INSTRUCTIONS
 
 
 app = FastAPI(title="Vigo API")
@@ -50,6 +50,39 @@ class ChatInput(BaseModel):
         if self.messages[-1].role != "user":
             raise ValueError("پیام آخر باید از کاربر باشد.")
         return self
+
+
+class AssistantOperation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    action: Literal["create", "update", "status"]
+    resource: Literal["campaign", "collaboration_request"]
+    record_id: int | None = Field(default=None, gt=0)
+    data: dict = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def valid_operation_shape(self) -> "AssistantOperation":
+        if self.action == "create" and self.record_id is not None:
+            raise ValueError("create نباید شناسه داشته باشد.")
+        if self.action != "create" and self.record_id is None:
+            raise ValueError("عملیات به شناسه نیاز دارد.")
+        if not self.data:
+            raise ValueError("عملیات به داده نیاز دارد.")
+        return self
+
+
+class AssistantOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    message: str = Field(min_length=1, max_length=1000)
+    operation: AssistantOperation | None = None
+
+    @field_validator("message")
+    @classmethod
+    def valid_message(cls, value: str) -> str:
+        return checked_text(value)
+
+
+class AdminAssistantInput(ChatInput):
+    pass
 
 
 class OpenRouterError(Exception):
@@ -220,6 +253,10 @@ def request_openrouter(messages: list[ChatMessage], api_key: str) -> str:
         "max_tokens": 350,
         "temperature": 0.35,
     }
+    return request_openrouter_payload(payload, api_key)
+
+
+def request_openrouter_payload(payload: dict, api_key: str) -> str:
     request = UrlRequest(
         "https://openrouter.ai/api/v1/chat/completions",
         data=json.dumps(payload).encode(),
@@ -250,6 +287,68 @@ def request_openrouter(messages: list[ChatMessage], api_key: str) -> str:
     return content.strip()
 
 
+def admin_context() -> dict[str, list[dict]]:
+    with connect() as connection:
+        campaigns = connection.execute(
+            "SELECT id, brand_name, requester_name, objective, status FROM campaigns ORDER BY id DESC LIMIT 20"
+        ).fetchall()
+        collaboration_requests = connection.execute(
+            "SELECT id, name, social_network, activity_field, status FROM collaboration_requests ORDER BY id DESC LIMIT 20"
+        ).fetchall()
+    return {"campaigns": [dict(row) for row in campaigns], "collaboration_requests": [dict(row) for row in collaboration_requests]}
+
+
+def request_admin_assistant(messages: list[ChatMessage], context: dict, api_key: str) -> str:
+    payload = {
+        "model": OPENROUTER_MODEL,
+        "messages": [
+            {"role": "system", "content": VIGO_ADMIN_ASSISTANT_INSTRUCTIONS},
+            {"role": "system", "content": f"Current Vigo data: {json.dumps(context, ensure_ascii=False)}"},
+            *[message.model_dump() for message in messages],
+        ],
+        "max_tokens": 500,
+        "temperature": 0.2,
+    }
+    return request_openrouter_payload(payload, api_key)
+
+
+def operation_error() -> HTTPException:
+    return HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="خروجی دستیار معتبر نیست و هیچ تغییری اعمال نشد.")
+
+
+def apply_assistant_operation(operation: AssistantOperation) -> dict:
+    table = "campaigns" if operation.resource == "campaign" else "collaboration_requests"
+    input_model = CampaignInput if operation.resource == "campaign" else CollaborationInput
+    allowed_fields = set(input_model.model_fields)
+
+    if operation.action == "create":
+        if set(operation.data) - allowed_fields:
+            raise operation_error()
+        try:
+            record = insert_record(table, input_model.model_validate(operation.data).model_dump(mode="json"), created_by_user_id=1)
+        except ValidationError as error:
+            raise operation_error() from error
+    elif operation.action == "update":
+        if set(operation.data) - (allowed_fields - {"status"}):
+            raise operation_error()
+        existing = get_record(table, operation.record_id)
+        merged = {field: operation.data.get(field, existing[field]) for field in allowed_fields}
+        try:
+            validated = input_model.model_validate(merged).model_dump(mode="json")
+        except ValidationError as error:
+            raise operation_error() from error
+        record = update_record(table, operation.record_id, {field: validated[field] for field in operation.data})
+    else:
+        if set(operation.data) != {"status"}:
+            raise operation_error()
+        valid_statuses = CAMPAIGN_STATUSES if operation.resource == "campaign" else COLLABORATION_STATUSES
+        if operation.data["status"] not in valid_statuses:
+            raise operation_error()
+        record = update_record(table, operation.record_id, {"status": operation.data["status"]})
+
+    return {"action": operation.action, "resource": operation.resource, "record": record}
+
+
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -274,6 +373,24 @@ def chat(payload: ChatInput) -> dict[str, str]:
         else:
             message = "پاسخ‌گویی دستیار با مشکل روبه‌رو شد. لطفاً دوباره تلاش کنید."
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE if error.status_code is None else error.status_code, detail=message) from None
+
+
+@app.post("/api/admin/assistant", dependencies=[Depends(require_admin)])
+def admin_assistant(payload: AdminAssistantInput) -> dict:
+    api_key = os.getenv("OPENROUTER_API_KEY", "")
+    if not api_key or re.search(r"your|replace|placeholder", api_key, re.IGNORECASE):
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="کلید OpenRouter در فایل .env پیکربندی نشده است.")
+    try:
+        raw_output = request_admin_assistant(payload.messages, admin_context(), api_key)
+    except OpenRouterError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="پاسخ‌گویی دستیار مدیریتی با مشکل روبه‌رو شد. لطفاً دوباره تلاش کنید.") from error
+    try:
+        output = AssistantOutput.model_validate_json(raw_output)
+    except ValidationError as error:
+        raise operation_error() from error
+
+    change = apply_assistant_operation(output.operation) if output.operation else None
+    return {"message": output.message, "change": change}
 
 
 @app.post("/api/auth/login")
