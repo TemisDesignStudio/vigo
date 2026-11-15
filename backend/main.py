@@ -1,7 +1,13 @@
 from datetime import date
+import json
+import os
 from pathlib import Path
 from secrets import token_urlsafe
 import re
+import time
+from typing import Literal
+from urllib.error import HTTPError, URLError
+from urllib.request import Request as UrlRequest, urlopen
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.exceptions import RequestValidationError
@@ -10,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from database import connect, now, password_matches
+from knowledge import VIGO_ASSISTANT_INSTRUCTIONS
 
 
 app = FastAPI(title="Vigo API")
@@ -17,11 +24,37 @@ frontend_dir = Path(__file__).parents[1] / "frontend" / "out"
 sessions: set[str] = set()
 CAMPAIGN_STATUSES = {"new", "reviewing", "approved", "active", "completed", "rejected"}
 COLLABORATION_STATUSES = {"new", "reviewing", "approved", "rejected"}
+OPENROUTER_MODEL = "openrouter/free"
 
 
 class LoginInput(BaseModel):
     username: str
     password: str
+
+
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=1000)
+
+    @field_validator("content")
+    @classmethod
+    def valid_content(cls, value: str) -> str:
+        return checked_text(value)
+
+
+class ChatInput(BaseModel):
+    messages: list[ChatMessage] = Field(min_length=1, max_length=8)
+
+    @model_validator(mode="after")
+    def last_message_is_user(self) -> "ChatInput":
+        if self.messages[-1].role != "user":
+            raise ValueError("پیام آخر باید از کاربر باشد.")
+        return self
+
+
+class OpenRouterError(Exception):
+    def __init__(self, status_code: int | None = None):
+        self.status_code = status_code
 
 
 def checked_text(value: str) -> str:
@@ -180,9 +213,67 @@ def update_record(table: str, record_id: int, data: dict) -> dict:
     return get_record(table, record_id)
 
 
+def request_openrouter(messages: list[ChatMessage], api_key: str) -> str:
+    payload = {
+        "model": OPENROUTER_MODEL,
+        "messages": [{"role": "system", "content": VIGO_ASSISTANT_INSTRUCTIONS}, *[message.model_dump() for message in messages]],
+        "max_tokens": 350,
+        "temperature": 0.35,
+    }
+    request = UrlRequest(
+        "https://openrouter.ai/api/v1/chat/completions",
+        data=json.dumps(payload).encode(),
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json", "X-Title": "Vigo Website Assistant"},
+        method="POST",
+    )
+    for attempt in range(2):
+        try:
+            with urlopen(request, timeout=30) as response:
+                data = json.loads(response.read())
+            break
+        except HTTPError as error:
+            if attempt == 0 and error.code >= 500:
+                time.sleep(0.5)
+                continue
+            raise OpenRouterError(error.code) from error
+        except (URLError, TimeoutError, json.JSONDecodeError):
+            if attempt == 0:
+                time.sleep(0.5)
+                continue
+            raise OpenRouterError() from None
+
+    content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+    if isinstance(content, list):
+        content = "".join(part.get("text", "") for part in content if isinstance(part, dict))
+    if not isinstance(content, str) or not content.strip():
+        raise OpenRouterError()
+    return content.strip()
+
+
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.post("/api/chat")
+def chat(payload: ChatInput) -> dict[str, str]:
+    api_key = os.getenv("OPENROUTER_API_KEY", "")
+    if not api_key or re.search(r"your|replace|placeholder", api_key, re.IGNORECASE):
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="کلید OpenRouter در فایل .env پیکربندی نشده است.")
+    try:
+        return {"message": request_openrouter(payload.messages, api_key)}
+    except OpenRouterError as error:
+        if error.status_code == status.HTTP_401_UNAUTHORIZED:
+            message = "اعتبار دستیار در سرور تأیید نشد."
+        elif error.status_code == status.HTTP_429_TOO_MANY_REQUESTS:
+            message = "مدل رایگان فعلاً به سقف ظرفیت رسیده است. چند دقیقه دیگر دوباره تلاش کنید."
+        elif error.status_code in {status.HTTP_404_NOT_FOUND, status.HTTP_503_SERVICE_UNAVAILABLE}:
+            message = "مدل انتخاب‌شده فعلاً در دسترس نیست."
+        elif error.status_code is None:
+            message = "اتصال به سرویس دستیار برقرار نشد. لطفاً دوباره تلاش کنید."
+        else:
+            message = "پاسخ‌گویی دستیار با مشکل روبه‌رو شد. لطفاً دوباره تلاش کنید."
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE if error.status_code is None else error.status_code, detail=message) from None
 
 
 @app.post("/api/auth/login")

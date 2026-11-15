@@ -48,3 +48,11 @@ test('public forms and the admin panel use the Vigo API contract', async () => {
   assert.match(admin, /'\/api\/admin\/collaboration-requests'/);
   assert.match(admin, /\/status/);
 });
+
+test('public chatbot uses the FastAPI endpoint and limits its request history', async () => {
+  const chatbot = await readFile(new URL('../app/Chatbot.jsx', import.meta.url), 'utf8');
+
+  assert.match(chatbot, /fetch\('\/api\/chat'/);
+  assert.match(chatbot, /nextMessages\.slice\(-8\)/);
+  assert.match(chatbot, /data\.detail/);
+});

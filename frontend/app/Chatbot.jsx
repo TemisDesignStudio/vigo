@@ -27,9 +27,9 @@ export default function Chatbot() {
     setError('');
     setLoading(true);
     try {
-      const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: nextMessages }) });
+      const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: nextMessages.slice(-8) }) });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'خطایی رخ داد.');
+      if (!response.ok) throw new Error(data.detail || data.error || 'خطایی رخ داد.');
       setMessages((current) => [...current, { role: 'assistant', content: data.message }]);
     } catch (reason) {
       setError(reason.message || 'خطایی رخ داد.');
