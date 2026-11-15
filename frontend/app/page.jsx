@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import heroStyles from './hero.module.css';
 import Chatbot from './Chatbot';
+import RequestForms from './requests/RequestForms';
 
 const collaboration = [
   ['۰۱', 'تولید محتوای UGC', 'ویدیو یا عکس را برای کانال‌های خودت تحویل بگیر.', 'peach'],
@@ -58,7 +59,7 @@ const campaignOptions = {
   }
 };
 
-function ScrollButton({ children = 'شروع کمپین' }) { return <button className="button" onClick={() => document.getElementById('budget').scrollIntoView({ behavior: 'smooth' })}>{children}</button> }
+function ScrollButton({ children = 'شروع کمپین' }) { return <button className="button" onClick={() => document.getElementById('campaign-form').scrollIntoView({ behavior: 'smooth' })}>{children}</button> }
 
 export default function Page() {
   const [budget, setBudget] = useState('۵ میلیون تومان');
@@ -83,13 +84,14 @@ export default function Page() {
       <div className="stat-grid"><div><small>تعداد همکار پیشنهادی</small><strong>{campaign.collaborators}</strong></div><div><small>ظرفیت تولید در این مثال</small><strong>{campaign.reels}</strong></div><div className="highlight"><small>بازدید تخمینی همین نمونه</small><strong>{campaign.views}</strong></div></div>
       <div className="calc-note"><b>{campaign.summary}</b>{campaign.details.map((detail) => <span key={detail}><br/>{detail}</span>)}</div><p className="disclaimer">جمع میانگین بازدید پیج کریتورها و پیج تبلیغاتی، به‌علاوه حدود ۲ هزار بازدید برای هر ریلز قابل انتشار توسط برند. بازدید تضمینی نیست.</p><ScrollButton/>
     </section>
+    <RequestForms />
     <section className="section shell"><SectionHeading tag="۰۲ / نوع همکاری" title="با یک بسته، چند نوع همکاری داشته باش." text="یک مبلغ مشخص برای بسته می‌پردازی و اعتبارش را بسته به نیازت بین تولید ریلز، همکاری با اینفلوئنسر و انتشار در پیج‌های تبلیغاتی تقسیم می‌کنی."/><div className="three-grid">{collaboration.map(([num,title,text,style])=><article className={'choice '+style} key={num}><i>{num}</i><h3>{title}</h3><p>{text}</p></article>)}</div></section>
     <section className="gray"><div className="section shell"><SectionHeading tag="۰۳ / مزیت‌ها" title="چرا ویگو برای تولید محتوای برندت؟" text="به اندازه کمپینت هزینه کن، برای هر محتوا چهره مناسب را انتخاب کن و کار را یکجا پیش ببر."/><div className="benefits">{benefits.map(([x,y])=><article key={x}><span>✦</span><h3>{x}</h3><p>{y}</p></article>)}</div></div></section>
     <section id="how" className="section shell"><SectionHeading tag="۰۴ / روند سفارش" title="سفارش محتوا در ویگو چطور پیش می‌رود؟"/><div className="three-grid steps">{steps.map(([n,x,y])=><article key={n}><i>{n}</i><h3>{x}</h3><p>{y}</p></article>)}</div></section>
     <section id="creators" className="section shell creators"><SectionHeading tag="۰۵ / ویترین" title="با کریتورهای ویگو آشنا شو." text="نمونه‌هایی از کریتورهای تاییدشده ویگو، با آمار ثبت‌شده ریلزهای اخیرشان."/><div className="creator-grid">{creators.map(([name,field,views,followers,c,cls])=><article className="creator" key={name}><div className={'creator-image '+cls}><span>▶</span></div><small>نمونه‌ویدیو · کاور پیش‌فرض</small><h3>{name}</h3><b>{field}</b><p>{views}</p><p>{followers}</p><strong>تولید از {c} کردیت</strong></article>)}</div></section>
     <section id="prices" className="gray"><div className="section shell"><SectionHeading tag="۰۶ / هزینه‌ها" title="بستهٔ تولید محتوا، متناسب با بودجه‌ات" text="از بسته کوچک برای چند ریلز تا اعتبار یک کمپین بزرگ‌تر، پیش از ارسال درخواست همکاری، هزینه و خروجی هر همکاری را دقیق می‌بینی."/><div className="price-grid">{prices.map(([name,price,credit],i)=><article className={'price '+(i===1?'featured':'')} key={name}><small>{i===0?'برای شروع':i===1?'پیشنهاد ویگو':'برای چند کمپین'}</small><h3>{name}</h3><strong>{price}</strong><p>تومان</p><hr/><b>{credit} کردیت</b><p>{credit==='۵۰'?'۵۰ کردیت پایه · بدون کردیت هدیه':credit==='۱۵۵'?'۱۵۰ کردیت پایه · ۵ کردیت هدیه':'۳۰۰ کردیت پایه · ۲۱ کردیت هدیه'}</p><em>نمونه ظرفیت: {credit==='۵۰' ? '۵' : credit==='۱۵۵' ? '۱۵' : '۳۲'} ریلز</em><p>با فرض ۱۰ کردیت برای هر ریلز</p></article>)}</div><a className="details" href="#footer">جزئیات تعرفه‌ها</a></div></section>
     <section className="shell telegram"><small>وب + تلگرام</small><h2>خبرهای مهم، مستقیم در تلگرام</h2><p>درخواست همکاری جدید، نزدیک‌شدن پایان مهلت پاسخ، تحویل محتوا و پیام‌های پروژه را در بات ویگو ببین.</p><button className="button">باز کردن بات ویگو</button></section>
-    <section className="shell orange"><h2>کریتور، اینفلوئنسر یا صاحب پیج تبلیغاتی هستی؟</h2><p>پروفایلت را بساز، خدماتت را معرفی کن و درخواست‌ها را در داشبوردت ببین.</p><button className="button">ثبت‌نام کریتور</button></section>
+    <section className="shell orange"><h2>کریتور، اینفلوئنسر یا صاحب پیج تبلیغاتی هستی؟</h2><p>پروفایلت را بساز، خدماتت را معرفی کن و درخواست‌ها را در داشبوردت ببین.</p><button className="button" onClick={() => { document.getElementById('campaign-form').scrollIntoView({ behavior: 'smooth' }); }}>ثبت‌نام کریتور</button></section>
     <section className="gray"><div className="section shell faq"><SectionHeading tag="۰۹ / پاسخ‌های کوتاه" title="سوال‌های متداول"/>{faqs.map(([q,a],i)=><article className="faq-row" key={q}><button onClick={()=>setOpen(open===i?null:i)}><b>{q}</b><span>{open===i?'−':'+'}</span></button>{open===i&&<p>{a}</p>}</article>)}</div></section>
     <footer id="footer" className="shell"><h2>VIGO</h2><p>ویگو، فضای مشترک بیزینس‌ها و کریتورها</p><div><a href="#prices">تعرفه‌ها</a><a href="#top">پشتیبانی</a></div></footer>
     <Chatbot />

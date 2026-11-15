@@ -35,3 +35,16 @@ test('login page and header link use the expected UI contract', async () => {
   assert.match(styles, /border-radius: 12px/);
   assert.match(styles, /\.field input:focus/);
 });
+
+test('public forms and the admin panel use the Vigo API contract', async () => {
+  const [forms, admin] = await Promise.all([
+    readFile(new URL('../app/requests/RequestForms.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../app/admin/page.jsx', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(forms, /'\/api\/campaigns'/);
+  assert.match(forms, /'\/api\/collaboration-requests'/);
+  assert.match(admin, /'\/api\/admin\/campaigns'/);
+  assert.match(admin, /'\/api\/admin\/collaboration-requests'/);
+  assert.match(admin, /\/status/);
+});

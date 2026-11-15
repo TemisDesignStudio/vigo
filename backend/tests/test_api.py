@@ -62,6 +62,26 @@ def test_public_campaign_requires_valid_data() -> None:
     assert created.json()["status"] == "new"
 
 
+def test_public_collaboration_request_requires_valid_data() -> None:
+    client = TestClient(app)
+    invalid = client.post("/api/collaboration-requests", json={**COLLABORATION, "profile_url": "not-a-url"})
+    assert invalid.status_code == 422
+
+    created = client.post("/api/collaboration-requests", json=COLLABORATION)
+    assert created.status_code == 201
+    assert created.json()["status"] == "new"
+
+
+def test_public_requests_are_visible_to_the_admin() -> None:
+    public = TestClient(app)
+    campaign = public.post("/api/campaigns", json=CAMPAIGN).json()
+    collaboration = public.post("/api/collaboration-requests", json=COLLABORATION).json()
+
+    admin = logged_in_client()
+    assert admin.get("/api/admin/campaigns").json()[0]["id"] == campaign["id"]
+    assert admin.get("/api/admin/collaboration-requests").json()[0]["id"] == collaboration["id"]
+
+
 def test_admin_campaign_crud_without_delete() -> None:
     client = TestClient(app)
     assert client.get("/api/admin/campaigns").status_code == 401

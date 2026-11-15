@@ -58,10 +58,11 @@
 ## ساختار فنی فعلی
 
 - پروژه Next.js 15 با React 19 اکنون در `frontend/` قرار دارد و با خروجی استاتیک در `frontend/out/` ساخته می‌شود.
-- `frontend/app/page.jsx` صفحه عمومی Vigo و `frontend/app/Chatbot.jsx` رابط چت‌بات هستند. Route قبلی OpenRouter در `frontend/legacy/api/` نگه‌داری می‌شود تا در بخش هشتم به FastAPI منتقل شود.
+- `frontend/app/page.jsx` صفحه عمومی Vigo، `frontend/app/requests/RequestForms.jsx` فرم‌های عمومی و `frontend/app/Chatbot.jsx` رابط چت‌بات هستند. Route قبلی OpenRouter در `frontend/legacy/api/` نگه‌داری می‌شود تا در بخش هشتم به FastAPI منتقل شود.
 - `frontend/app/globals.css`، `frontend/app/hero.module.css` و `frontend/app/chatbot.module.css` استایل‌ها را نگه می‌دارند؛ دارایی‌های تصویری در `frontend/public/images/` قرار دارند.
 - دانش تأییدشده چت‌بات در `frontend/lib/vigo-knowledge.js` است.
 - `backend/main.py` مسیر `/api/health` را پیش از mount خروجی `frontend/out/` در `/` ارائه می‌کند.
 - `Dockerfile` ابتدا خروجی استاتیک Next.js و آزمون‌های آن را با Node می‌سازد و سپس آن را در image نهایی Python/FastAPI با `uv` کپی می‌کند. `.dockerignore` از ورود `.env`، cacheها و وابستگی‌ها به image جلوگیری می‌کند.
 - اسکریپت‌های `scripts/start.ps1` و `scripts/stop.ps1` برای Windows و `scripts/start.sh` و `scripts/stop.sh` برای macOS/Linux هستند. volume نام‌دار `vigo-data` برای داده پایدار آینده در `/data` mount می‌شود.
+- `frontend/app/admin/page.jsx` فهرست، ثبت و تغییر وضعیت کمپین‌ها و درخواست‌های همکاری را با نشست مدیر نمایش می‌دهد.
 - `backend/database.py` SQLite را در `/data/vigo.db` ایجاد و مدیر آزمایشی را seed می‌کند؛ مسیرهای عمومی و محافظت‌شدهٔ داده در `backend/main.py` هستند.

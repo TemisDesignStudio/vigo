@@ -216,6 +216,11 @@ def create_public_campaign(payload: CampaignInput) -> dict:
     return insert_record("campaigns", payload.model_dump(mode="json"))
 
 
+@app.post("/api/collaboration-requests", status_code=status.HTTP_201_CREATED)
+def create_public_collaboration_request(payload: CollaborationInput) -> dict:
+    return insert_record("collaboration_requests", payload.model_dump(mode="json"))
+
+
 @app.get("/api/admin/campaigns", dependencies=[Depends(require_admin)])
 def list_campaigns() -> list[dict]:
     with connect() as connection:
