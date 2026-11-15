@@ -64,4 +64,4 @@
 - `backend/main.py` مسیر `/api/health` را پیش از mount خروجی `frontend/out/` در `/` ارائه می‌کند.
 - `Dockerfile` ابتدا خروجی استاتیک Next.js و آزمون‌های آن را با Node می‌سازد و سپس آن را در image نهایی Python/FastAPI با `uv` کپی می‌کند. `.dockerignore` از ورود `.env`، cacheها و وابستگی‌ها به image جلوگیری می‌کند.
 - اسکریپت‌های `scripts/start.ps1` و `scripts/stop.ps1` برای Windows و `scripts/start.sh` و `scripts/stop.sh` برای macOS/Linux هستند. volume نام‌دار `vigo-data` برای داده پایدار آینده در `/data` mount می‌شود.
-- طرح SQLite در `docs/database-schema.json` مستند شده است؛ ایجاد پایگاه داده و مسیرهای داده‌ای به مرحله ششم موکول شده‌اند.
+- `backend/database.py` SQLite را در `/data/vigo.db` ایجاد و مدیر آزمایشی را seed می‌کند؛ مسیرهای عمومی و محافظت‌شدهٔ داده در `backend/main.py` هستند.

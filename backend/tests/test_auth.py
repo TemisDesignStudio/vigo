@@ -1,9 +1,14 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from main import app, sessions
 
 
-def setup_function() -> None:
+@pytest.fixture(autouse=True)
+def isolated_database(tmp_path, monkeypatch):
+    monkeypatch.setenv("VIGO_DB_PATH", str(tmp_path / "vigo.db"))
+    sessions.clear()
+    yield
     sessions.clear()
 
 
