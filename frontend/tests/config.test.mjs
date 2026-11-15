@@ -21,3 +21,17 @@ test('each budget has a complete fixed campaign option', async () => {
   assert.match(page, /campaign\.summary/);
   assert.match(page, /campaign\.details/);
 });
+
+test('login page and header link use the expected UI contract', async () => {
+  const [login, styles, page] = await Promise.all([
+    readFile(new URL('../app/login/page.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../app/login/login.module.css', import.meta.url), 'utf8'),
+    readFile(new URL('../app/page.jsx', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(page, /href="\/login\/"/);
+  assert.match(login, /dir="ltr"/);
+  assert.match(styles, /height: 50px/);
+  assert.match(styles, /border-radius: 12px/);
+  assert.match(styles, /\.field input:focus/);
+});

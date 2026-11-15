@@ -67,7 +67,7 @@ export default function Page() {
   const campaign = campaignOptions[budget];
   return <main>
     <header className="nav shell">
-      <a className="logo" href="#top">VIGO</a><nav><a href="#creators">کریتورها و اینفلوئنسرها</a><a href="#how">چطور کار می‌کند؟</a><a href="#prices">تعرفه‌ها</a></nav><div className="nav-actions"><a href="#footer">ورود</a><ScrollButton>ساخت کمپین</ScrollButton></div>
+      <a className="logo" href="#top">VIGO</a><nav><a href="#creators">کریتورها و اینفلوئنسرها</a><a href="#how">چطور کار می‌کند؟</a><a href="#prices">تعرفه‌ها</a></nav><div className="nav-actions"><a href="/login/">ورود</a><ScrollButton>ساخت کمپین</ScrollButton></div>
     </header>
     <section id="top" className="hero shell">
       <h1>با هر بودجه‌ای که داری، برای برندت کمپین محتوایی بچین؛<br/>از تولید ریلز تا تبلیغات با میکرواینفلوئنسرها.<em>شروع از ۵ میلیون تومان.</em></h1>

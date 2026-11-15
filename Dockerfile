@@ -23,6 +23,7 @@ COPY backend/pyproject.toml ./
 RUN uv sync --no-dev --no-install-project
 
 COPY backend/ ./
+RUN PYTHONPATH=. uv run --with pytest --with httpx pytest tests
 COPY --from=frontend-build /app/frontend/out /app/frontend/out
 
 EXPOSE 8000
