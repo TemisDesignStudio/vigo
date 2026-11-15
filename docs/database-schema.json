@@ -1,0 +1,59 @@
+{
+  "database": {
+    "engine": "SQLite",
+    "path": "/data/vigo.db",
+    "schema_version": 1,
+    "timestamp_format": "UTC ISO 8601 text"
+  },
+  "tables": {
+    "users": {
+      "description": "کاربران پنل مدیریت؛ در MVP فقط یک مدیر آزمایشی وجود دارد.",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "primary_key": true, "auto_increment": true },
+        { "name": "username", "type": "TEXT", "required": true, "unique": true },
+        { "name": "password_hash", "type": "TEXT", "required": true },
+        { "name": "role", "type": "TEXT", "required": true, "allowed_values": ["admin"] },
+        { "name": "created_at", "type": "TEXT", "required": true },
+        { "name": "updated_at", "type": "TEXT", "required": true }
+      ]
+    },
+    "campaigns": {
+      "description": "درخواست‌های کمپین ثبت‌شده توسط برندها یا کسب‌وکارها.",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "primary_key": true, "auto_increment": true },
+        { "name": "brand_name", "type": "TEXT", "required": true },
+        { "name": "requester_name", "type": "TEXT", "required": true },
+        { "name": "contact", "type": "TEXT", "required": true },
+        { "name": "budget", "type": "INTEGER", "required": true, "minimum": 0, "unit": "toman" },
+        { "name": "objective", "type": "TEXT", "required": true },
+        { "name": "start_date", "type": "TEXT", "required": false, "format": "YYYY-MM-DD" },
+        { "name": "end_date", "type": "TEXT", "required": false, "format": "YYYY-MM-DD" },
+        { "name": "description", "type": "TEXT", "required": false },
+        { "name": "status", "type": "TEXT", "required": true, "default": "new", "allowed_values": ["new", "reviewing", "approved", "active", "completed", "rejected"] },
+        { "name": "created_by_user_id", "type": "INTEGER", "required": false, "references": "users.id" },
+        { "name": "created_at", "type": "TEXT", "required": true },
+        { "name": "updated_at", "type": "TEXT", "required": true }
+      ]
+    },
+    "collaboration_requests": {
+      "description": "درخواست‌های همکاری تولیدکنندگان محتوا و اینفلوئنسرها.",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "primary_key": true, "auto_increment": true },
+        { "name": "name", "type": "TEXT", "required": true },
+        { "name": "contact", "type": "TEXT", "required": true },
+        { "name": "social_network", "type": "TEXT", "required": true },
+        { "name": "profile_url", "type": "TEXT", "required": true },
+        { "name": "activity_field", "type": "TEXT", "required": true },
+        { "name": "description", "type": "TEXT", "required": false },
+        { "name": "status", "type": "TEXT", "required": true, "default": "new", "allowed_values": ["new", "reviewing", "approved", "rejected"] },
+        { "name": "created_by_user_id", "type": "INTEGER", "required": false, "references": "users.id" },
+        { "name": "created_at", "type": "TEXT", "required": true },
+        { "name": "updated_at", "type": "TEXT", "required": true }
+      ]
+    }
+  },
+  "indexes": [
+    { "table": "campaigns", "columns": ["status"], "name": "idx_campaigns_status" },
+    { "table": "collaboration_requests", "columns": ["status"], "name": "idx_collaboration_requests_status" }
+  ]
+}
