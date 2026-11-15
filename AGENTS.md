@@ -61,4 +61,7 @@
 - `app/page.jsx` صفحه عمومی Vigo، `app/Chatbot.jsx` رابط چت‌بات، و `app/api/chat/route.js` اتصال فعلی مستقیم چت‌بات به OpenRouter هستند.
 - `app/globals.css`، `app/hero.module.css` و `app/chatbot.module.css` استایل‌ها را نگه می‌دارند؛ دارایی‌های تصویری در `public/images/` قرار دارند.
 - دانش تأییدشده چت‌بات در `lib/vigo-knowledge.js` است. تا بخش هشتم، اتصال OpenRouter در Next.js باقی می‌ماند و سپس به FastAPI منتقل می‌شود.
-- در وضعیت فعلی هیچ پوشه یا پیکربندی برای `backend/`، Docker، SQLite، `scripts/` یا آزمون‌ها وجود ندارد.
+- `backend/main.py` سرویس حداقلی FastAPI را ارائه می‌کند: HTML آزمایشی در `/` و سلامت API در `/api/health`.
+- `Dockerfile` یک تصویر تک‌کانتینری Python/FastAPI می‌سازد و وابستگی‌های Python را درون کانتینر با `uv` نصب می‌کند. `.dockerignore` از ورود `.env` به image جلوگیری می‌کند.
+- اسکریپت‌های `scripts/start.ps1` و `scripts/stop.ps1` برای Windows و `scripts/start.sh` و `scripts/stop.sh` برای macOS/Linux هستند. volume نام‌دار `vigo-data` برای داده پایدار آینده در `/data` mount می‌شود.
+- SQLite، مسیرهای داده‌ای، احراز هویت، و آزمون‌های خودکار هنوز به مراحل بعدی موکول شده‌اند.
