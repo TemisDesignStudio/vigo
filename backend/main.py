@@ -298,6 +298,49 @@ def admin_context() -> dict[str, list[dict]]:
     return {"campaigns": [dict(row) for row in campaigns], "collaboration_requests": [dict(row) for row in collaboration_requests]}
 
 
+def normalize_reference(value: str) -> str:
+    return re.sub(r"\s+", " ", value.replace("ي", "ی").replace("ك", "ک").strip()).casefold()
+
+
+def reference_id(value: str) -> int:
+    return int(value.translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789")))
+
+
+def resolve_admin_references(instruction: str, context: dict[str, list[dict]]) -> dict:
+    normalized_instruction = normalize_reference(instruction)
+    resource = "collaboration_request" if "همکاری" in normalized_instruction else "campaign"
+    records = context["collaboration_requests"] if resource == "collaboration_request" else context["campaigns"]
+    record_ids = {item["id"] for item in records}
+    resolved = []
+    for raw_id in re.findall(r"(?:شماره|شناسه|id)\s*([0-9۰-۹]+)", normalized_instruction, flags=re.IGNORECASE):
+        record_id = reference_id(raw_id)
+        if record_id in record_ids:
+            resolved.append({"resource": resource, "id": record_id, "reason": "explicit_id"})
+
+    name_field = "name" if resource == "collaboration_request" else "brand_name"
+    name_matches = [item for item in records if normalize_reference(item[name_field]) in normalized_instruction]
+    if len(name_matches) > 1:
+        matches = ", ".join(f"{item[name_field]} (شناسه {item['id']})" for item in name_matches)
+        label = "نام درخواست همکاری" if resource == "collaboration_request" else "نام کمپین"
+        return {"resolved": resolved, "ambiguous": f"{label} مبهم است: {matches}. لطفاً شناسه را مشخص کنید."}
+    if len(name_matches) == 1:
+        match = name_matches[0]
+        resolved.append({"resource": resource, "id": match["id"], "reason": "unique_name", "name": match[name_field]})
+    return {"resolved": resolved, "ambiguous": None}
+
+
+def direct_status_operation(instruction: str, resolution: dict) -> AssistantOperation | None:
+    normalized_instruction = normalize_reference(instruction)
+    if "وضعیت" not in normalized_instruction or len(resolution["resolved"]) != 1:
+        return None
+    reference = resolution["resolved"][0]
+    statuses = CAMPAIGN_STATUSES if reference["resource"] == "campaign" else COLLABORATION_STATUSES
+    requested = [value for value in statuses if re.search(rf"(?<![a-z]){re.escape(value)}(?![a-z])", normalized_instruction)]
+    if len(requested) != 1:
+        return None
+    return AssistantOperation(action="status", resource=reference["resource"], record_id=reference["id"], data={"status": requested[0]})
+
+
 def request_admin_assistant(messages: list[ChatMessage], context: dict, api_key: str) -> str:
     payload = {
         "model": OPENROUTER_MODEL,
@@ -314,6 +357,46 @@ def request_admin_assistant(messages: list[ChatMessage], context: dict, api_key:
 
 def operation_error() -> HTTPException:
     return HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="خروجی دستیار معتبر نیست و هیچ تغییری اعمال نشد.")
+
+
+def parse_assistant_output(raw_output: str) -> AssistantOutput:
+    cleaned = raw_output.strip()
+    fenced = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", cleaned, flags=re.DOTALL | re.IGNORECASE)
+    if fenced:
+        cleaned = fenced.group(1)
+    try:
+        parsed, _ = json.JSONDecoder().raw_decode(cleaned[cleaned.index("{") :])
+    except (ValueError, json.JSONDecodeError) as error:
+        raise operation_error() from error
+    if not isinstance(parsed, dict):
+        raise operation_error()
+
+    operation = parsed.get("operation")
+    if isinstance(operation, dict):
+        action = operation.get("action", operation.get("type"))
+        resource = operation.get("resource", operation.get("record_type"))
+        aliases = {
+            "change_status": "status",
+            "update_status": "status",
+            "campaigns": "campaign",
+            "collaboration": "collaboration_request",
+            "collaboration_requests": "collaboration_request",
+        }
+        action = aliases.get(action, action)
+        resource = aliases.get(resource, resource)
+        data = operation.get("data", operation.get("fields", {}))
+        if not data and "status" in operation:
+            data = {"status": operation["status"]}
+        parsed["operation"] = {
+            "action": action,
+            "resource": resource,
+            "record_id": operation.get("record_id", operation.get("id", operation.get("campaign_id", operation.get("collaboration_request_id")))),
+            "data": data,
+        }
+    try:
+        return AssistantOutput.model_validate(parsed)
+    except ValidationError as error:
+        raise operation_error() from error
 
 
 def apply_assistant_operation(operation: AssistantOperation) -> dict:
@@ -380,14 +463,20 @@ def admin_assistant(payload: AdminAssistantInput) -> dict:
     api_key = os.getenv("OPENROUTER_API_KEY", "")
     if not api_key or re.search(r"your|replace|placeholder", api_key, re.IGNORECASE):
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="کلید OpenRouter در فایل .env پیکربندی نشده است.")
+    context = admin_context()
+    resolution = resolve_admin_references(payload.messages[-1].content, context)
+    if resolution["ambiguous"]:
+        return {"message": resolution["ambiguous"], "change": None}
+    context["reference_resolution"] = resolution["resolved"]
+    direct_operation = direct_status_operation(payload.messages[-1].content, resolution)
+    if direct_operation:
+        change = apply_assistant_operation(direct_operation)
+        return {"message": "وضعیت رکورد با موفقیت تغییر کرد.", "change": change}
     try:
-        raw_output = request_admin_assistant(payload.messages, admin_context(), api_key)
+        raw_output = request_admin_assistant(payload.messages, context, api_key)
     except OpenRouterError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="پاسخ‌گویی دستیار مدیریتی با مشکل روبه‌رو شد. لطفاً دوباره تلاش کنید.") from error
-    try:
-        output = AssistantOutput.model_validate_json(raw_output)
-    except ValidationError as error:
-        raise operation_error() from error
+    output = parse_assistant_output(raw_output)
 
     change = apply_assistant_operation(output.operation) if output.operation else None
     return {"message": output.message, "change": change}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import styles from './admin.module.css';
+import AdminAssistant from './AdminAssistant';
 
 const campaignStatuses = ['new', 'reviewing', 'approved', 'active', 'completed', 'rejected'];
 const collaborationStatuses = ['new', 'reviewing', 'approved', 'rejected'];
@@ -51,7 +52,7 @@ export default function AdminPage() {
   const statuses = tab === 'campaigns' ? campaignStatuses : collaborationStatuses;
   return <main className={`shell ${styles.page}`}><header className={styles.header}><div><small>پنل مدیریت Vigo</small><h1>خوش آمدید {username || '...'}</h1></div><button className="button" onClick={logout}>خروج از حساب</button></header>
     <div className={styles.tabs}><button className={tab === 'campaigns' ? styles.active : ''} onClick={() => setTab('campaigns')}>کمپین‌ها</button><button className={tab === 'collaboration-requests' ? styles.active : ''} onClick={() => setTab('collaboration-requests')}>درخواست‌های همکاری</button></div>
-    <section className={styles.grid}><div className={styles.panel}><h2>ثبت {tab === 'campaigns' ? 'کمپین' : 'درخواست همکاری'}</h2><form onSubmit={submit}>{Object.entries(fields).map(([name, value]) => <label key={name}>{labels[name]}<input required={name !== 'description'} name={name} value={value} type={name === 'budget' ? 'number' : 'text'} dir={name.includes('contact') || name.includes('url') || name === 'budget' ? 'ltr' : undefined} onChange={(event) => setFields({ ...fields, [name]: event.target.value })} /></label>)}<button className="button">ثبت در پنل</button>{message && <p className={styles.message}>{message}</p>}</form></div>
+    <div className={styles.workspace}><section className={styles.grid}><div className={styles.panel}><h2>ثبت {tab === 'campaigns' ? 'کمپین' : 'درخواست همکاری'}</h2><form onSubmit={submit}>{Object.entries(fields).map(([name, value]) => <label key={name}>{labels[name]}<input required={name !== 'description'} name={name} value={value} type={name === 'budget' ? 'number' : 'text'} dir={name.includes('contact') || name.includes('url') || name === 'budget' ? 'ltr' : undefined} onChange={(event) => setFields({ ...fields, [name]: event.target.value })} /></label>)}<button className="button">ثبت در پنل</button>{message && <p className={styles.message}>{message}</p>}</form></div>
       <div className={styles.panel}><h2>{tab === 'campaigns' ? 'فهرست کمپین‌ها' : 'فهرست درخواست‌های همکاری'}</h2>{items.length === 0 ? <p className={styles.empty}>هنوز رکوردی ثبت نشده است.</p> : <div className={styles.list}>{items.map((item) => <article key={item.id}><div><b>{tab === 'campaigns' ? item.brand_name : item.name}</b><span>{tab === 'campaigns' ? item.requester_name : item.social_network}</span></div><select value={item.status} onChange={(event) => changeStatus(item, event.target.value)}>{statuses.map((value) => <option key={value}>{value}</option>)}</select></article>)}</div>}</div>
-    </section></main>;
+    </section><AdminAssistant onChange={load} /></div></main>;
 }

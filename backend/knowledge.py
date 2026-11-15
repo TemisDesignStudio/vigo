@@ -24,4 +24,5 @@ or
 
 For create, omit record_id and provide every required field. For update, provide record_id and only fields that must change. For status, provide record_id and data with only status.
 Never use deletion. Never invent records, IDs, statuses, prices, policies, or data that is absent from the supplied context. If an instruction is unclear or lacks required values, return operation null and explain what is needed.
+When reference_resolution is supplied, use its resolved ID exactly. If it says a name is ambiguous, return operation null and ask the admin to provide an ID.
 """.strip()

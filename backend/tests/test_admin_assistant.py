@@ -62,3 +62,43 @@ def test_invalid_assistant_output_never_changes_data(monkeypatch) -> None:
 def test_public_user_cannot_use_admin_assistant() -> None:
     response = TestClient(app).post("/api/admin/assistant", json={"messages": [{"role": "user", "content": "یک کمپین بساز"}]})
     assert response.status_code == 401
+
+
+def test_admin_assistant_resolves_unique_campaign_name_and_id(monkeypatch) -> None:
+    client = admin_client()
+    campaign = client.post("/api/admin/campaigns", json={"brand_name": "Temis Branding", "requester_name": "سارا", "contact": "sara@example.com", "budget": 5000000, "objective": "معرفی"}).json()
+    monkeypatch.setattr(main, "request_admin_assistant", lambda *_: pytest.fail("وضعیت صریح نباید به مدل وابسته باشد"))
+    response = client.post("/api/admin/assistant", json={"messages": [{"role": "user", "content": "وضعیت کمپین Temis Branding را به active تغییر بده"}]})
+    assert response.status_code == 200
+    assert response.json()["change"]["record"]["status"] == "active"
+
+    response = client.post("/api/admin/assistant", json={"messages": [{"role": "user", "content": f"وضعیت کمپین شماره {campaign['id']} را به active تغییر بده"}]})
+    assert response.status_code == 200
+    context = main.admin_context()
+    assert main.resolve_admin_references(f"وضعیت کمپین شماره {campaign['id']} را به active تغییر بده", context)["resolved"][0]["reason"] == "explicit_id"
+
+
+def test_admin_assistant_requires_id_for_duplicate_campaign_names(monkeypatch) -> None:
+    client = admin_client()
+    payload = {"brand_name": "Temis Branding", "requester_name": "سارا", "contact": "sara@example.com", "budget": 5000000, "objective": "معرفی"}
+    client.post("/api/admin/campaigns", json=payload)
+    client.post("/api/admin/campaigns", json={**payload, "requester_name": "رضا"})
+    monkeypatch.setattr(main, "request_admin_assistant", lambda *_: pytest.fail("مدل نباید برای نام مبهم فراخوانی شود"))
+
+    response = client.post("/api/admin/assistant", json={"messages": [{"role": "user", "content": "وضعیت کمپین Temis Branding را تغییر بده"}]})
+    assert response.status_code == 200
+    assert response.json()["change"] is None
+    assert "شناسه" in response.json()["message"]
+
+
+def test_admin_assistant_normalizes_fenced_common_operation_format(monkeypatch) -> None:
+    client = admin_client()
+    campaign = client.post("/api/admin/campaigns", json={"brand_name": "Temis Branding", "requester_name": "سارا", "contact": "sara@example.com", "budget": 5000000, "objective": "معرفی"}).json()
+    raw = f'''```json
+{{"message":"وضعیت تغییر کرد.","operation":{{"type":"change_status","record_type":"campaigns","id":{campaign["id"]},"status":"active"}}}}
+```'''
+    monkeypatch.setattr(main, "request_admin_assistant", lambda *_: raw)
+
+    response = client.post("/api/admin/assistant", json={"messages": [{"role": "user", "content": "دستور مدیریتی"}]})
+    assert response.status_code == 200
+    assert response.json()["change"]["record"]["status"] == "active"

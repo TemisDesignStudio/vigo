@@ -64,5 +64,5 @@
 - `backend/main.py` مسیر `/api/health` را پیش از mount خروجی `frontend/out/` در `/` ارائه می‌کند.
 - `Dockerfile` ابتدا خروجی استاتیک Next.js و آزمون‌های آن را با Node می‌سازد و سپس آن را در image نهایی Python/FastAPI با `uv` کپی می‌کند. `.dockerignore` از ورود `.env`، cacheها و وابستگی‌ها به image جلوگیری می‌کند.
 - اسکریپت‌های `scripts/start.ps1` و `scripts/stop.ps1` برای Windows و `scripts/start.sh` و `scripts/stop.sh` برای macOS/Linux هستند. volume نام‌دار `vigo-data` برای داده پایدار آینده در `/data` mount می‌شود.
-- `frontend/app/admin/page.jsx` فهرست، ثبت و تغییر وضعیت کمپین‌ها و درخواست‌های همکاری را با نشست مدیر نمایش می‌دهد.
-- `backend/database.py` SQLite را در `/data/vigo.db` ایجاد و مدیر آزمایشی را seed می‌کند؛ مسیرهای عمومی و محافظت‌شدهٔ داده، چت‌بات عمومی و دستیار مدیریتی در `backend/main.py` هستند. دستورالعمل‌های AI در `backend/knowledge.py` قرار دارند.
+- `frontend/app/admin/page.jsx` فهرست، ثبت و تغییر وضعیت کمپین‌ها و درخواست‌های همکاری و `frontend/app/admin/AdminAssistant.jsx` گفت‌وگوی دستیار را با نشست مدیر نمایش می‌دهند.
+- `backend/database.py` SQLite را در `/data/vigo.db` ایجاد و مدیر آزمایشی را seed می‌کند؛ مسیرهای عمومی و محافظت‌شدهٔ داده، چت‌بات عمومی و دستیار مدیریتی با تطبیق قطعی نام/شناسه و اجرای قطعی دستورهای صریح status در `backend/main.py` هستند. دستورالعمل‌های AI در `backend/knowledge.py` قرار دارند.

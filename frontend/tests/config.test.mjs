@@ -56,3 +56,16 @@ test('public chatbot uses the FastAPI endpoint and limits its request history', 
   assert.match(chatbot, /nextMessages\.slice\(-8\)/);
   assert.match(chatbot, /data\.detail/);
 });
+
+test('admin assistant uses the protected structured-operation endpoint', async () => {
+  const [admin, assistant] = await Promise.all([
+    readFile(new URL('../app/admin/page.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../app/admin/AdminAssistant.jsx', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(admin, /<AdminAssistant onChange=\{load\}/);
+  assert.match(assistant, /'\/api\/admin\/assistant'/);
+  assert.match(assistant, /nextMessages\.slice\(-8\)/);
+  assert.match(assistant, /await onChange\(\)/);
+  assert.match(assistant, /data\.change/);
+});
